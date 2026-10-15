@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+k8s/
+test.sh
+README.md

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Interview-Quiz</title>
+  <link rel="preload" href="/fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plex-mono-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <canvas id="bgCv" aria-hidden="true"></canvas>
+  <canvas id="fxCv" aria-hidden="true"></canvas>
+
+  <div id="app">
+    <header class="bar">
+      <button id="exitBtn" class="back" type="button" hidden>&#8592; Beenden</button>
+      <div class="bar-r">
+        <button id="soundBtn" class="pill-btn" type="button" aria-pressed="false">&#128263; Ton aus</button>
+        <button id="aiToggle" class="pill-btn" type="button" aria-controls="ai">&#129302; KI-Helfer</button>
+      </div>
+    </header>
+
+    <div class="strip-wrap" id="stripWrap">
+      <div class="strip" id="strip" role="group" aria-label="Fragen"></div>
+      <p class="strip-text" id="stripText" aria-live="polite"></p>
+    </div>
+
+    <main>
+      <!-- MENÜ -->
+      <section id="start" class="sc">
+        <div class="logo">
+          <div class="logo-eye">Kubernetes &middot; Homelab &middot; KI</div>
+          <h1 class="logo-h">INTERVIEW<br><span class="ac">QUIZ</span></h1>
+          <p class="logo-s" id="lead">Fragen &middot; Tipp &middot; KI-Helfer</p>
+        </div>
+
+        <div class="xp-panel">
+          <div class="xp-top">
+            <span class="xp-lvl" id="mLvl">LEVEL 1</span>
+            <span class="xp-inf" id="mXinf">0 / 100 XP</span>
+          </div>
+          <div class="xp-trk"><div class="xp-fill" id="mXfill"></div></div>
+        </div>
+
+        <div class="group" role="group" aria-labelledby="topicLabel">
+          <p class="sec-hd" id="topicLabel">Thema</p>
+          <div class="cat-row" id="topicChips"></div>
+        </div>
+
+        <div class="group" role="group" aria-labelledby="countLabel">
+          <p class="sec-hd" id="countLabel">Anzahl Fragen</p>
+          <div class="cat-row" id="countChips"></div>
+        </div>
+
+        <div id="stripSlotStart" class="strip-slot"></div>
+
+        <button id="startBtn" class="btn-main" type="button">QUIZ STARTEN</button>
+        <p class="keys">Tastatur: A bis D oder 1 bis 4 antworten &middot; H Tipp &middot; Pfeile blättern &middot; S überspringt</p>
+      </section>
+
+      <!-- QUIZ -->
+      <section id="quiz" class="sc" hidden>
+        <div class="b-hud">
+          <div class="b-left">
+            <span class="b-prog" id="qNo"></span>
+            <span class="b-score" id="score">0</span>
+          </div>
+          <div class="b-right">
+            <div class="b-combo" id="combo"></div>
+            <div class="b-combo-lbl">Combo</div>
+          </div>
+        </div>
+
+        <div id="stripSlotQuiz" class="strip-slot"></div>
+
+        <div class="q-card" id="qCard">
+          <span class="q-tag" id="topic"></span>
+          <h2 class="q-word" id="question" tabindex="-1"></h2>
+        </div>
+
+        <div class="options" id="options" role="group" aria-labelledby="question"></div>
+
+        <div class="tools" id="tools">
+          <button id="hintBtn" class="tool" type="button">&#128161; Tipp zeigen</button>
+          <button id="aiAsk" class="tool" type="button">&#129302; KI fragen</button>
+        </div>
+        <p class="hint" id="hint" hidden></p>
+
+        <div class="feedback" id="feedback" hidden aria-live="polite">
+          <p class="verdict" id="verdict"></p>
+          <p class="explain" id="explain"></p>
+        </div>
+
+        <nav class="navbar" aria-label="Fragen wechseln">
+          <button id="prevBtn" class="nav-btn" type="button">&#8592; Zurück</button>
+          <button id="skipBtn" class="nav-btn" type="button">Überspringen</button>
+          <button id="nextBtn" class="nav-btn main" type="button">Weiter &#8594;</button>
+        </nav>
+      </section>
+
+      <!-- ERGEBNIS -->
+      <section id="result" class="sc" hidden>
+        <div class="r-top">
+          <span class="r-emoji" id="rEm">&#127942;</span>
+          <h2 class="r-title" id="scoreHead">PERFEKT</h2>
+          <p class="r-sub" id="scoreSub"></p>
+        </div>
+
+        <div class="stat-row" id="rStats"></div>
+
+        <div class="xp-box">
+          <span class="xp-n" id="rXp">+0 XP</span>
+          <div class="xp-l">Erfahrung verdient</div>
+        </div>
+
+        <div class="actions">
+          <button id="retryBtn" class="btn-main" type="button">OFFENE UND FALSCHE WIEDERHOLEN</button>
+          <button id="againBtn" class="btn-ghost" type="button">Neues Quiz</button>
+        </div>
+
+        <h3 class="sec-hd sub">Nach Thema</h3>
+        <div class="topics" id="topicBars"></div>
+
+        <h3 class="sec-hd sub">Alle Fragen</h3>
+        <div class="table-wrap">
+          <table class="pods">
+            <caption>$ kubectl get pods -n quiz</caption>
+            <thead><tr><th scope="col">NAME</th><th scope="col">READY</th><th scope="col">STATUS</th><th scope="col">TIPP</th></tr></thead>
+            <tbody id="podRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer>Geliefert von Pod <code id="pod">…</code></footer>
+  </div>
+
+  <aside id="ai" class="drawer" aria-label="KI-Helfer" aria-hidden="true" inert>
+    <div class="drawer-head">
+      <h2>KI-HELFER</h2>
+      <button id="aiClose" class="pill-btn" type="button" aria-label="KI-Helfer schließen">Schließen</button>
+    </div>
+
+    <div id="aiSetup" class="drawer-body">
+      <p>Für den KI-Helfer brauchst du einen API-Key von Anthropic oder OpenAI. Der Key bleibt in diesem Browser und geht nur an den gewählten Anbieter. Er steht nie im Image und nie im Cluster.</p>
+      <label class="field">Anbieter
+        <select id="aiProvider">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI</option>
+        </select>
+      </label>
+      <label class="field">API-Key
+        <input id="aiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Key hier einfügen">
+      </label>
+      <label class="field">Modell
+        <input id="aiModel" type="text" autocomplete="off" spellcheck="false" value="claude-haiku-5-5">
+      </label>
+      <label class="check"><input type="checkbox" id="aiRemember"> Key auf diesem Gerät merken</label>
+      <button id="aiSave" class="btn-main" type="button">SPEICHERN</button>
+      <p class="small" id="aiSetupMsg" aria-live="polite"></p>
+    </div>
+
+    <div id="aiChat" class="drawer-body chat" hidden>
+      <div id="aiLog" class="log" aria-live="polite"></div>
+      <div class="composer">
+        <textarea id="aiInput" rows="2" placeholder="Frag zur aktuellen Frage. Strg+Enter sendet." aria-label="Deine Frage an die KI"></textarea>
+        <button id="aiSend" class="btn-main" type="button">SENDEN</button>
+      </div>
+      <button id="aiReset" class="linklike" type="button">Key ändern oder löschen</button>
+    </div>
+  </aside>
+
+  <script src="/app.js"></script>
+</body>
+</html>

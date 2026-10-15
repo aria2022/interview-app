@@ -1,0 +1,58 @@
+name: quiz-app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "quiz-app/**"
+      - ".github/workflows/quiz-app.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "quiz-app/**"
+      - ".github/workflows/quiz-app.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository herunterladen
+        uses: actions/checkout@v7
+
+      - name: Python installieren
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Quiz-App testen
+        run: ./quiz-app/test.sh
+
+  image:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/aria2022/quiz-app
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Repository herunterladen
+        uses: actions/checkout@v7
+
+      - name: Bei GHCR anmelden
+        run: echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Image bauen
+        run: docker build -t "$IMAGE:0.3.0" -t "$IMAGE:${{ github.sha }}" quiz-app
+
+      - name: Image nach GHCR pushen
+        run: |
+          docker push "$IMAGE:0.3.0"
+          docker push "$IMAGE:${{ github.sha }}"

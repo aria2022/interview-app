@@ -1,0 +1,1042 @@
+[
+ {
+  "id": 36,
+  "group": "Mein Homelab",
+  "q": "Wie viele Nodes hat dein Cluster, mit welchen Rollen und welchem OS?",
+  "correct": "Drei: eine Control Plane (k8s-control) und zwei Worker, alle mit Ubuntu 24.04.",
+  "wrong": [
+   "Zwei: ein Control-Plane-Node und ein Worker, beide mit Debian 12.",
+   "Drei Control-Plane-Nodes ohne Worker, alle mit Ubuntu 24.04.",
+   "Fünf Nodes: zwei Control Plane und drei Worker, alle mit Rocky Linux."
+  ],
+  "hint": "Es gibt eine Control Plane. Die Pods laufen auf den anderen Nodes.",
+  "explain": "Drei: k8s-control (Control Plane) sowie k8s-worker1 und k8s-worker2 (Worker), alle Ubuntu 24.04.5 LTS, Kubernetes v1.37.0 (kubeadm). Am 15.10. live mit kubectl geprüft."
+ },
+ {
+  "id": 37,
+  "group": "Mein Homelab",
+  "q": "Wie hast du den Cluster aufgebaut?",
+  "correct": "Nodes vorbereiten, kubeadm init, Calico installieren, Worker per Join aufnehmen.",
+  "wrong": [
+   "Mit einem Managed-Service in der Cloud, den ich per Klick gebucht habe.",
+   "Mit Docker Compose auf einer Maschine, danach alles in Pods umgewandelt.",
+   "Mit Helm auf allen drei Nodes gleichzeitig, ganz ohne Vorbereitung."
+  ],
+  "hint": "Ein Werkzeug initialisiert den Cluster auf eigenen Maschinen. Sein Name beginnt mit kube.",
+  "explain": "Nodes vorbereiten (Swap aus, overlay und br_netfilter, sysctl, containerd), kubeadm init auf k8s-control, Calico als CNI installieren, beide Worker per Join aufnehmen (über Ansible), Namespace interview-lab anlegen."
+ },
+ {
+  "id": 38,
+  "group": "Mein Homelab",
+  "q": "Wozu nutzt du Ansible, und was bedeutet changed=0 im zweiten Lauf?",
+  "correct": "Ein Auftrag läuft auf allen Nodes. changed=0: nichts zu ändern (idempotent).",
+  "wrong": [
+   "Ansible startet die Pods. changed=0 heißt, alle Pods sind abgestürzt.",
+   "Ansible baut Images. changed=0 heißt, der Build hat nicht funktioniert.",
+   "Ansible ersetzt kubectl. changed=0 heißt, der Cluster hat keine Nodes."
+  ],
+  "hint": "Idempotent: Zweimal ausführen darf nichts Neues bewirken.",
+  "explain": "Ein Auftrag läuft auf allen Nodes der Inventory-Gruppe k8s_cluster (Ping, Updates). changed=0 heißt: Nichts war zu ändern, das Playbook ist idempotent."
+ },
+ {
+  "id": 39,
+  "group": "Mein Homelab",
+  "q": "Welche Vorbereitung braucht ein Node vor kubeadm?",
+  "correct": "Swap aus, Module laden, sysctl setzen, containerd mit SystemdCgroup.",
+  "wrong": [
+   "Swap an, SELinux einschalten und Docker Desktop installieren.",
+   "Nur kubectl installieren, alles andere macht kubeadm von allein.",
+   "Alle Ports schließen und den Node vom Netzwerk trennen."
+  ],
+  "hint": "Kubernetes verträgt Swap nicht, und die Container-Runtime muss passend eingestellt sein.",
+  "explain": "Swap aus, Module overlay und br_netfilter laden, sysctl bridge-nf-call-iptables, bridge-nf-call-ip6tables und ip_forward auf 1, containerd mit SystemdCgroup = true."
+ },
+ {
+  "id": 40,
+  "group": "Mein Homelab",
+  "q": "Welche Endpunkte hat die interview-app, und was prüft /readyz dort?",
+  "correct": "/, /healthz, /readyz auf Port 8080. /readyz antwortet dort immer 200.",
+  "wrong": [
+   "Nur /. /readyz prüft die Datenbankverbindung.",
+   "/, /health und /ready auf Port 80. /readyz prüft den freien Speicher.",
+   "/api und /metrics auf Port 9090. /readyz prüft die Zertifikate."
+  ],
+  "hint": "Die interview-app ist klein: Sie kennt nur drei Pfade.",
+  "explain": "/, /healthz und /readyz auf Port 8080. Beide Health-Pfade antworten immer 200, /readyz prüft also noch keine Abhängigkeit."
+ },
+ {
+  "id": 41,
+  "group": "Mein Homelab",
+  "q": "Was steht im Dockerfile der interview-app, und warum läuft der Container als Non-Root?",
+  "correct": "python:3.12-slim, nur app.py, USER 10001. Non-Root begrenzt den Schaden.",
+  "wrong": [
+   "ubuntu:latest mit allen Tools. Non-Root macht den Container schneller.",
+   "Ein Multi-Stage-Build mit Go. Non-Root ist Pflicht für Port 8080.",
+   "python:3.12-slim mit Root-Nutzer, weil Kubernetes sonst nicht startet."
+  ],
+  "hint": "Wenn jemand den Prozess übernimmt: Was soll er nicht dürfen?",
+  "explain": "python:3.12-slim, WORKDIR /app, nur app.py kopiert, USER 10001:10001, EXPOSE 8080, CMD python3 app.py. Non-Root begrenzt den Schaden, wenn jemand den Prozess übernimmt."
+ },
+ {
+  "id": 42,
+  "group": "Mein Homelab",
+  "q": "Was macht die CI der interview-app, und was macht sie nicht?",
+  "correct": "Test bei Push und PR, bei Push dann Image bauen und pushen. Kein Deployment.",
+  "wrong": [
+   "Sie deployt automatisch per kubectl apply in den Cluster, sobald der Test grün ist.",
+   "Sie führt nur den Test aus und baut nie ein Image, auch nicht bei Push.",
+   "Sie baut das Image auf k8s-control und startet die Pods direkt."
+  ],
+  "hint": "Für CD müsste etwas automatisch im Cluster ausrollen. Das tut hier niemand.",
+  "explain": "Zwei Jobs. test läuft bei Push und Pull Request (checkout, Python 3.12, ./test.sh). image läuft nur bei Push, nur nach grünem Test (needs: test): login bei GHCR mit GITHUB_TOKEN (permissions: packages: write), docker build mit den Tags 0.1.0 und Commit-SHA, docker push. Das ist nur CI. Deployment läuft von Hand per kubectl apply (kein CD)."
+ },
+ {
+  "id": 43,
+  "group": "Mein Homelab",
+  "q": "Wo steht dein Projekt gerade? Antworte ehrlich in drei Sätzen.",
+  "correct": "Cluster, App, CI, Image stehen, 2 Replicas laufen. Offen: Ingress, Backup.",
+  "wrong": [
+   "Alles ist produktionsreif: Ingress, Monitoring, Backup und CD laufen.",
+   "Nur die Planung steht, es läuft noch nichts im Cluster, auch keine App.",
+   "Der Cluster läuft, aber die App wurde noch nie deployt und getestet."
+  ],
+  "hint": "Ehrlich heißt: Belegtes nennen und Offenes offen lassen.",
+  "explain": "Cluster mit drei Nodes steht (Ansible, kubeadm, Calico). App mit CI, Image liegt öffentlich in GHCR, Deployment mit 2 Replicas im Namespace interview-lab, per Port-Forward und curl getestet. Offen: Ingress oder Gateway API, Monitoring, Backup, automatisches Deployment (CD)."
+ },
+ {
+  "id": 44,
+  "group": "Mein Homelab",
+  "q": "Warum kann ein grüner Test der interview-app trotzdem falsch sein?",
+  "correct": "Ein alter Prozess belegt Port 8080 und antwortet. Der Test wird trotzdem grün.",
+  "wrong": [
+   "Weil grüne Tests immer eine zweite Prüfung auf Zertifikate brauchen.",
+   "Weil curl bei Erfolg immer einen Fehlercode zurückgibt und grep ihn ignoriert.",
+   "Weil GitHub Actions bei grünen Tests automatisch Tags überschreibt."
+  ],
+  "hint": "Denk an test.sh: Es startet die App im Hintergrund und wartet nur kurz.",
+  "explain": "test.sh startet die App im Hintergrund und wartet nur eine Sekunde. Belegt ein alter Prozess Port 8080 (\"Address already in use\"), antwortet dieser und der Test wird grün. Gegenmittel: Start prüfen, freien Port nutzen, mit `ss -ltn 'sport = :8080'` kontrollieren."
+ },
+ {
+  "id": 45,
+  "group": "Mein Homelab",
+  "q": "Warum passen die Manifest-Vorlagen im Ordner kubernetes-lab nicht zur App?",
+  "correct": "Andere Health-Pfade und ein Image-Platzhalter, beides vor dem Apply anpassen.",
+  "wrong": [
+   "Sie sind für eine andere Kubernetes-Version und lassen sich nicht anwenden.",
+   "Sie enthalten kein Deployment, sondern nur Services und einen Namespace.",
+   "Sie nutzen Port 80 im Container, die App lauscht aber auf Port 443."
+  ],
+  "hint": "Die App antwortet auf /healthz und /readyz.",
+  "explain": "Sie nutzen andere Health-Pfade (/health/live, /health/ready) und einen Image-Platzhalter. Deine App antwortet auf /healthz und /readyz, das Image soll ghcr.io/aria2022/interview-app heißen. Vor dem Apply anpassen."
+ },
+ {
+  "id": 46,
+  "group": "Mein Homelab",
+  "q": "Von wo nutzt du kubectl aktuell, und was fehlt für den Laptop?",
+  "correct": "Per SSH auf k8s-control. Dem Laptop fehlen kubeconfig und passendes kubectl.",
+  "wrong": [
+   "Direkt vom Laptop aus. Es fehlt nur noch ein lokaler Docker-Daemon.",
+   "Von GitHub Actions aus. Für den Laptop fehlt dazu ein eigener Runner.",
+   "Von jedem Worker aus. Für den Laptop fehlt ein zweiter Cluster."
+  ],
+  "hint": "kubectl braucht Zugang zum API-Server.",
+  "explain": "Per SSH auf k8s-control (dort v1.37.0). Auf Windows ist kubectl v1.32.2 ohne gesetzten Context. Nötig: eine kubeconfig mit dem API-Server und ein kubectl, das höchstens eine Minor-Version vom Cluster abweicht."
+ },
+ {
+  "id": 47,
+  "group": "Mein Homelab",
+  "q": "Wie viel Kapazität hat dein Cluster realistisch?",
+  "correct": "Zwei Worker, je 4 vCPU und etwa 7,8 GiB RAM. Die Control Plane hat einen Taint.",
+  "wrong": [
+   "Alle drei Nodes tragen Pods, je 16 vCPU und 32 GB RAM, ohne Taint.",
+   "Nur die Control Plane trägt Pods, die Worker sind für Backups.",
+   "Der Cluster hat unbegrenzt Kapazität, weil Pods keine Ressourcen brauchen."
+  ],
+  "hint": "Bei kubeadm läuft auf der Control Plane normalerweise kein Anwendungs-Pod.",
+  "explain": "Pods laufen nur auf den zwei Workern (die Control Plane trägt einen Taint). Am 15.10. gemessen: je Node 4 vCPU und etwa 7,8 GiB RAM. Wie viel RAM der Host insgesamt hat (32 oder 64 GB), ist noch zu klären."
+ },
+ {
+  "id": 48,
+  "group": "Mein Homelab",
+  "q": "Wo baust du das Image der interview-app, und warum eignet sich die CI dafür?",
+  "correct": "In der CI auf einem sauberen Runner, ohne Zugangsdaten auf dem Laptop.",
+  "wrong": [
+   "Auf k8s-control mit Docker, weil dort immer ein Docker-Daemon läuft.",
+   "Im Pod selbst, beim Start des Containers, direkt aus dem Quellcode.",
+   "Auf dem Laptop, weil GHCR nur lokal gebaute Images annimmt."
+  ],
+  "hint": "Auf k8s-control gibt es weder Docker noch Podman.",
+  "explain": "In der CI: sauberer Runner, nach grünem Test Push mit packages: write über GITHUB_TOKEN, keine Zugangsdaten auf deinem Laptop. Auf k8s-control gibt es weder Docker noch Podman, dort wird also nicht gebaut."
+ },
+ {
+  "id": 49,
+  "group": "Mein Homelab",
+  "q": "Was prüfst du, bevor der Cluster ein Image aus GHCR zieht?",
+  "correct": "Die Sichtbarkeit: Bei privat braucht der Cluster ein imagePullSecret.",
+  "wrong": [
+   "Ob der Tag latest heißt, sonst weigert sich Kubernetes zu starten.",
+   "Ob die Control Plane einen Taint trägt, sonst startet kein Pod.",
+   "Ob das Image mindestens ein Gigabyte groß ist."
+  ],
+  "hint": "ImagePullBackOff erscheint, wenn der Cluster das Image nicht holen darf.",
+  "explain": "Die Sichtbarkeit des Pakets. Privat: der Cluster braucht ein imagePullSecret, sonst ImagePullBackOff. Dein Paket interview-app ist öffentlich (warum es von Anfang an öffentlich war, ist ungeklärt). Dazu ein fester Tag statt latest: der SHA-Tag ist exakt, 0.1.0 wird bei jedem Push überschrieben."
+ },
+ {
+  "id": 50,
+  "group": "Mein Homelab",
+  "q": "Welche Risiken hat dein Setup?",
+  "correct": "Ein Control-Plane-Node, kein Backup, überschriebener Tag, kein CD, kein Monitoring.",
+  "wrong": [
+   "Keine: Ein Node reicht, und Backups sind bei kubeadm automatisch dabei.",
+   "Zu viele Control-Plane-Nodes und zu viel Monitoring auf zu wenig Hardware.",
+   "Das Risiko liegt nur im Dockerfile, der Rest des Setups ist abgesichert."
+  ],
+  "hint": "Was fällt aus, wenn k8s-control ausfällt?",
+  "explain": "Ein einzelner Control-Plane-Node, kein bestätigtes Backup, /readyz prüft bei der interview-app nichts, der Test kann gegen einen alten Prozess grün werden, Basisimage und Actions per Tag statt Digest oder SHA, Tag 0.1.0 wird überschrieben, kein CD, kein bekanntes Monitoring."
+ },
+ {
+  "id": 51,
+  "group": "Mein Homelab",
+  "q": "Nenne ein Problem aus dem Aufbau mit Ursache und Lösung.",
+  "correct": "br_netfilter war nicht geladen. Modul laden, dann standen die Werte auf 1.",
+  "wrong": [
+   "Pods blieben Pending, weil Swap fehlte. Lösung: Swap einschalten.",
+   "kubeadm lief nicht, weil Port 22 offen war. Lösung: Port schließen.",
+   "Calico startete nicht, weil containerd fehlte. Lösung: Docker Desktop installieren."
+  ],
+  "hint": "Es ging um ein Kernelmodul für Netzwerk-Bridges.",
+  "explain": "Beispiel: Die Bridge-sysctl-Dateien fehlten, weil br_netfilter nicht geladen war. Modul laden, danach standen die Werte auf 1. Weitere Beispiele in Abschnitt 14."
+ },
+ {
+  "id": 52,
+  "group": "Mein Homelab",
+  "q": "SSH meldet \"Permission denied\". Läuft der Server? Was bedeuten \"Connection timed out\" und \"Connection refused\"?",
+  "correct": "Denied: Server läuft, Login scheiterte. Timed out: keine Antwort. Refused: kein SSH-Dienst.",
+  "wrong": [
+   "Permission denied: Server ist aus. Timed out: falsches Passwort. Refused: Schlüssel fehlt.",
+   "Permission denied: Der Port ist geschlossen. Timed out: Server läuft. Refused: Anmeldung gescheitert.",
+   "Alle drei Meldungen bedeuten, dass der Server ausgeschaltet ist."
+  ],
+  "hint": "Wer eine Anmeldung ablehnen lassen kann, hat den Server erreicht.",
+  "explain": "Permission denied: Verbindung und Handshake standen, nur die Anmeldung scheiterte, der Server läuft. Steht in der Meldung aber \"connect to host … Permission denied\", blockiert meist etwas auf dem eigenen Rechner (Firewall, Sandbox), und der Server hat nie geantwortet. Timed out: keine Antwort (VM aus, falsche IP, Firewall). Refused: Host da, aber kein SSH-Dienst auf Port 22."
+ },
+ {
+  "id": 53,
+  "group": "Mein Homelab",
+  "q": "Was ist ein Namespace, und was isoliert er nicht?",
+  "correct": "Ein logischer Namensbereich. Netzwerk und Rechte isoliert er nicht.",
+  "wrong": [
+   "Ein eigener Cluster. Er isoliert auch Netzwerk und Rechte vollständig.",
+   "Ein Node-Typ für Worker. Er isoliert nur die CPU des Nodes.",
+   "Ein Image-Tag. Er isoliert den Speicher der Container."
+  ],
+  "hint": "Ein Namespace trennt Namen, nicht automatisch den Verkehr.",
+  "explain": "Ein logischer Namensbereich für Ressourcen wie Pods und Services (hier interview-lab). Er isoliert weder Netzwerk noch Rechte; dafür braucht es NetworkPolicies und RBAC."
+ },
+ {
+  "id": 54,
+  "group": "Mein Homelab",
+  "q": "Was machen `git remote add origin` und `git push -u origin main`?",
+  "correct": "remote add speichert die Adresse als origin, push -u überträgt Commits und merkt origin/main.",
+  "wrong": [
+   "remote add lädt den Code herunter. push löscht den lokalen Branch.",
+   "remote add erstellt das GitHub-Repository. push -u überträgt auch uncommittete Dateien.",
+   "remote add startet die CI. push -u erzeugt das Image."
+  ],
+  "hint": "origin ist nur ein Name für eine Adresse.",
+  "explain": "remote add speichert nur die Zieladresse unter dem Namen origin. push überträgt die Commits von main, -u merkt sich origin/main als Standardziel. Uncommittete Dateien werden nicht hochgeladen."
+ },
+ {
+  "id": 55,
+  "group": "Mein Homelab",
+  "q": "Entsteht durch `python3 app.py` ein Container?",
+  "correct": "Nein, das startet nur einen Prozess. Ein Container entsteht aus einem Image.",
+  "wrong": [
+   "Ja, Python legt dabei automatisch ein Image im Hintergrund an.",
+   "Ja, aber nur, wenn ein Dockerfile im selben Ordner liegt.",
+   "Nein, es entsteht ein Pod, weil Python Kubernetes erkennt und startet."
+  ],
+  "hint": "Ein Dockerfile allein belegt noch keinen Build.",
+  "explain": "Nein, das startet nur einen normalen Prozess. Ein Container entsteht aus einem Image (docker build, dann docker run oder ein Pod). Das Dockerfile allein belegt keinen Build."
+ },
+ {
+  "id": 56,
+  "group": "Mein Homelab",
+  "q": "Was bedeuten `&`, `$!` und `APP_PID` in `python3 app.py & APP_PID=$!`?",
+  "correct": "& startet im Hintergrund, $! liefert die PID dieses Prozesses, APP_PID speichert sie für kill.",
+  "wrong": [
+   "& verknüpft zwei Befehle, $! ist der Exit-Code, APP_PID ist der Port.",
+   "& leitet Ausgaben um, $! ist der letzte Dateiname, APP_PID ist die Python-Version.",
+   "& beendet den Prozess, $! zeigt Fehler, APP_PID ist eine Umgebungsvariable der App."
+  ],
+  "hint": "PID heißt Prozessnummer.",
+  "explain": "`&` startet im Hintergrund, `$!` liefert die PID dieses Prozesses, APP_PID speichert sie, damit `kill \"$APP_PID\"` ihn später beendet. %1 meint Job 1 der aktuellen Shell."
+ },
+ {
+  "id": 57,
+  "group": "Mein Homelab",
+  "q": "Was ist ein Here-Document (`<<'EOF'`), und was bewirkt `>`?",
+  "correct": "<<'EOF' liest Text bis EOF, > schreibt in eine Datei und überschreibt sie.",
+  "wrong": [
+   "<<'EOF' beendet die Shell. > hängt Text an eine bestehende Datei an.",
+   "<<'EOF' lädt eine Datei aus dem Internet. > liest aus einer Datei.",
+   "<<'EOF' kommentiert Code aus. > führt einen Befehl im Hintergrund aus."
+  ],
+  "hint": "Das Wort EOF ist frei gewählt und markiert das Ende des Textes.",
+  "explain": "`<<'EOF'` liest Text bis zur Zeile EOF (frei gewählte Endmarke) als Eingabe; die einfachen Anführungszeichen verhindern Variablen-Expansion. `>` schreibt in eine Datei und überschreibt sie."
+ },
+ {
+  "id": 58,
+  "group": "Mein Homelab",
+  "q": "Was bedeuten `-o wide` und `-A` bei kubectl get?",
+  "correct": "-o wide zeigt Zusatzspalten wie Node und IP, -A alle Namespaces.",
+  "wrong": [
+   "-o wide zeigt breitere Schrift, -A zeigt nur Admin-Ressourcen.",
+   "-o wide sortiert nach Alter, -A wählt den ältesten Pod.",
+   "-o wide gibt JSON aus, -A fragt nur den Standard-Namespace ab."
+  ],
+  "hint": "A wie all.",
+  "explain": "`-o wide` zeigt Zusatzspalten wie Node und IP, `-A` fragt alle Namespaces ab."
+ },
+ {
+  "id": 59,
+  "group": "Mein Homelab",
+  "q": "Warum zeigt `curl -s` keinen Fehler, und was nimmst du stattdessen?",
+  "correct": "-s unterdrückt auch Fehler. -sS zeigt sie, --fail macht HTTP-Fehler zum Fehler.",
+  "wrong": [
+   "-s ist ein Sicherheitsmodus. Stattdessen nimmst du -k für sichere Verbindungen.",
+   "-s sendet nur die Header. Stattdessen nimmst du -X für die Methode.",
+   "-s speichert die Antwort in einer Datei. Stattdessen nimmst du -o."
+  ],
+  "hint": "s wie silent, also still.",
+  "explain": "`-s` unterdrückt auch Fehlermeldungen. `-sS` bleibt still, zeigt aber Fehler; `--fail` macht HTTP-Fehlercodes zum Fehler."
+ },
+ {
+  "id": 60,
+  "group": "Mein Homelab",
+  "q": "Wie fährst du das Homelab sicher herunter und wieder hoch?",
+  "correct": "Erst die VMs herunterfahren, dann den Host. Danach kubectl get nodes prüfen.",
+  "wrong": [
+   "Erst den Proxmox-Host ausschalten, dann laufen die VMs von selbst aus.",
+   "Nur die Worker ausschalten, die Control Plane bleibt immer an.",
+   "Netzstecker ziehen, Kubernetes repariert sich beim Start selbst."
+  ],
+  "hint": "Die VMs laufen auf dem Host. Wer geht zuerst?",
+  "explain": "Erst die VMs geordnet herunterfahren, dann den Proxmox-Host. Nach dem Start mit kubectl get nodes prüfen, ob alle Nodes Ready sind."
+ },
+ {
+  "id": 61,
+  "group": "Mein Homelab",
+  "q": "Was ist der Unterschied zwischen Path, Node und Note?",
+  "correct": "Path ist ein Dateipfad, Node ein Rechner im Cluster, Note ist kein K8s-Begriff.",
+  "wrong": [
+   "Alle drei sind Kubernetes-Objekte, die Pods verwalten und Last verteilen.",
+   "Path ist ein Rechner im Cluster, Node ein Dateipfad, Note ein Pod.",
+   "Node und Note sind dasselbe, nur anders geschrieben, Path ist ein Port."
+  ],
+  "hint": "Einer der drei Begriffe gehört gar nicht zu Kubernetes.",
+  "explain": "Path ist ein Datei- oder Verzeichnispfad. Node ist ein Rechner im Cluster, bei dir eine VM. \"Note\" heißt \"Notiz\" und ist hier kein Kubernetes-Begriff."
+ },
+ {
+  "id": 62,
+  "group": "Mein Homelab",
+  "q": "Welcher \"Server\" wird beendet, wenn du kill \"$APP_PID\" ausführst?",
+  "correct": "Nur der Python-Webserverprozess der App, weder die VM noch Proxmox.",
+  "wrong": [
+   "Die ganze VM, weil kill den Rechner herunterfährt.",
+   "Der Proxmox-Host, weil die VM davon abhängt.",
+   "Der Kubernetes-API-Server, weil die App dort registriert ist."
+  ],
+  "hint": "APP_PID ist die Nummer eines einzigen Prozesses.",
+  "explain": "Nur der Python-Webserverprozess der App. Weder die VM noch Proxmox werden dadurch ausgeschaltet."
+ },
+ {
+  "id": 63,
+  "group": "Mein Homelab",
+  "q": "Warum zeigt der Test der interview-app kein Hello, obwohl er die Antwort prüft?",
+  "correct": "curl --fail --silent und grep --quiet geben nichts aus, nur der Gesamterfolg.",
+  "wrong": [
+   "Der Test prüft nur den Statuscode und ignoriert den Inhalt der Antwort.",
+   "Die App antwortet gar nicht mit Hello, der Test ist nur ein Platzhalter.",
+   "GitHub Actions blendet Ausgaben mit dem Wort Hello immer aus."
+  ],
+  "hint": "--quiet und --silent unterdrücken Ausgaben.",
+  "explain": "test.sh prüft die Antworten mit curl --fail --silent und grep --quiet. Der Text wird verglichen, aber nicht ausgegeben. Das Skript meldet nur den Gesamterfolg (\"Alle Tests erfolgreich\")."
+ },
+ {
+  "id": 64,
+  "group": "Mein Homelab",
+  "q": "Warum war die Ausgabe der Git-Abfrage für Name und E-Mail leer, und ist das eine GitHub-Anmeldung?",
+  "correct": "Kein Wert gesetzt. Name und E-Mail sind Commit-Metadaten, die Anmeldung läuft per SSH.",
+  "wrong": [
+   "Git war nicht installiert. Name und E-Mail sind die GitHub-Anmeldung.",
+   "Der Server war offline. Name und E-Mail sind der SSH-Schlüssel.",
+   "Die Abfrage ist leer, weil das Repo privat ist. Name und E-Mail sind das GitHub-Passwort."
+  ],
+  "hint": "Wer committet hat und wer angemeldet ist, sind zwei verschiedene Dinge.",
+  "explain": "Die abgefragte Git-Konfiguration hatte keinen Wert. Name und E-Mail sind Commit-Metadaten (wer hat committet), keine GitHub-Anmeldung. Die Anmeldung läuft getrennt, bei dir per SSH."
+ },
+ {
+  "id": 65,
+  "group": "Mein Homelab",
+  "q": "Was macht git remote -v?",
+  "correct": "Zeigt die gespeicherten Remote-Adressen, überträgt nichts.",
+  "wrong": [
+   "Es lädt alle neuen Änderungen vom Remote auf den Rechner.",
+   "Es überträgt alle lokalen Commits zum Remote-Server.",
+   "Es prüft die installierte Version von git."
+  ],
+  "hint": "-v steht für verbose, also ausführlich.",
+  "explain": "Zeigt die gespeicherten Remote-Adressen für fetch und push. Es überträgt nichts. Prüfe die Ausgabe vor dem Weitergeben auf eingebettete Zugangsdaten in den URLs."
+ },
+ {
+  "id": 66,
+  "group": "Mein Homelab",
+  "q": "Reicht ein Übergabeprompt, damit ein neuer Chat deinen echten Stand kennt?",
+  "correct": "Nein. Er enthält gespeicherten Stand, aber keinen Live-Zustand.",
+  "wrong": [
+   "Ja, ein Prompt spiegelt immer den aktuellen Cluster-Zustand.",
+   "Ja, sobald er länger als tausend Wörter ist und alle Befehle enthält.",
+   "Nein, aber nur, weil neue Chats keinen Text lesen können."
+  ],
+  "hint": "Ein Prompt ist eine Momentaufnahme von früher.",
+  "explain": "Er enthält Ziele und gespeicherten Stand, aber keinen Live-Zustand. Seine Aussagen müssen von aktuellen Nachweisen getrennt bleiben. Bei dir ist das die Datei kubernetes-handoff-prompt.md im lokalen Projektordner. Den heutigen Zustand zeigen die zwei kubectl-Befehle aus Abschnitt 14."
+ },
+ {
+  "id": 67,
+  "group": "Ingress & Gateway API",
+  "q": "Was bedeuten host, path, backend und service in einem Ingress?",
+  "correct": "host: Domain, path: Teil nach der Domain, backend: Ziel, service: Name und Port des Service.",
+  "wrong": [
+   "host ist der Node, path der Dateipfad, backend die Datenbank, service der Systemdienst.",
+   "host ist der Pod, path die Image-URL, backend das Gateway, service der Namespace.",
+   "host ist die IP des Clusters, path der Port, backend der Controller, service der Ingress."
+  ],
+  "hint": "Den Host kennst du aus der Adresszeile im Browser.",
+  "explain": "host: Domain im Browser. path: Teil nach der Domain, zum Beispiel / oder /api. backend: Ziel, wenn Host und Path passen. service: Name und Port des Kubernetes-Service darin."
+ },
+ {
+  "id": 68,
+  "group": "Ingress & Gateway API",
+  "q": "Was ist der Unterschied zwischen Ingress und Ingress-Controller?",
+  "correct": "Ingress ist das Regel-Objekt, der Controller die Software, die sie umsetzt.",
+  "wrong": [
+   "Ingress ist die Software, der Controller ist die Regeldatei dazu.",
+   "Beide sind dasselbe, nur der Name unterscheidet sich je nach Anbieter.",
+   "Ingress läuft auf dem Worker, der Controller nur auf der Control Plane."
+  ],
+  "hint": "Eine Regel allein verteilt keinen Verkehr.",
+  "explain": "Ingress = Regel-Objekt, tut allein nichts. Controller (zum Beispiel Nginx oder Traefik) = laufende Software, die die Regeln umsetzt; einmal im Cluster installiert, zum Beispiel mit Helm."
+ },
+ {
+  "id": 69,
+  "group": "Ingress & Gateway API",
+  "q": "Wozu dient ingressClassName?",
+  "correct": "Es verweist auf eine IngressClass und wählt so den zuständigen Controller.",
+  "wrong": [
+   "Es setzt den Namen der Domain, unter der die App erreichbar ist.",
+   "Es wählt das Container-Image, das der Controller beim Start nutzt.",
+   "Es bestimmt den Port, auf dem der Service im Cluster lauscht."
+  ],
+  "hint": "Mehrere Controller im Cluster: Wer ist für diesen Ingress zuständig?",
+  "explain": "Es ist ein Feld im Ingress. Es verweist auf ein IngressClass-Objekt, und das legt fest, welcher installierte Ingress-Controller zuständig ist."
+ },
+ {
+  "id": 70,
+  "group": "Ingress & Gateway API",
+  "q": "Was ist mit Ingress NGINX passiert, und was bedeutet das für neue Setups?",
+  "correct": "Pflege endete März 2026, keine Updates mehr. Neu: Gateway API oder anderer Controller.",
+  "wrong": [
+   "Es wurde zum Standard erklärt und ist für neue Setups Pflicht.",
+   "Es wurde in den Kubernetes-Kern eingebaut und braucht keine Installation.",
+   "Es wurde in Gateway API umbenannt und ist 1:1 kompatibel zu allen Ingress-Regeln."
+  ],
+  "hint": "Das Kubernetes-Projekt hat das Ende der Pflege angekündigt.",
+  "explain": "Laut Kubernetes-Ankündigung vom 11.11.2025 lief die Pflege bis März 2026, danach gibt es keine Releases, Bugfixes und Sicherheitsupdates mehr. Bestehende Installationen laufen weiter. Für Neues: Gateway API oder ein anderer Controller."
+ },
+ {
+  "id": 71,
+  "group": "Ingress & Gateway API",
+  "q": "Ist damit der Webserver Nginx am Ende?",
+  "correct": "Nein. Betroffen ist nur das Kubernetes-Projekt Ingress NGINX.",
+  "wrong": [
+   "Ja, der Webserver Nginx wird nicht mehr gepflegt.",
+   "Ja, und alle Docker-Images mit Nginx sind gesperrt.",
+   "Nein, aber Nginx lässt sich nicht mehr in Kubernetes betreiben."
+  ],
+  "hint": "Es geht um ein Projekt im Kubernetes-Umfeld, nicht um den Webserver.",
+  "explain": "Nein. Betroffen ist nur das Kubernetes-Projekt Ingress NGINX. (Das folgt aus dem Zusammenhang der Ankündigung, sie sagt es nicht ausdrücklich.)"
+ },
+ {
+  "id": 72,
+  "group": "Ingress & Gateway API",
+  "q": "Welche drei Objekte hat die Gateway API, und wer pflegt welches?",
+  "correct": "GatewayClass (Anbieter), Gateway (Infra-Team), HTTPRoute (App-Team).",
+  "wrong": [
+   "Gateway, Ingress und Service, alle vom App-Team gepflegt.",
+   "GatewayClass, Gateway und Pod, alle vom Infra-Team gepflegt.",
+   "Route, Router und Switch, vom Netzwerk-Team gepflegt."
+  ],
+  "hint": "Eine Vorlage, eine gemeinsame Tür und Regeln pro App.",
+  "explain": "GatewayClass (Vorlage, meist vom Infrastruktur-Anbieter), Gateway (gemeinsame Tür, Infra-Team), HTTPRoute (Regeln pro App, App-Team)."
+ },
+ {
+  "id": 73,
+  "group": "Ingress & Gateway API",
+  "q": "Was ist eine GatewayClass, und in welchem Namespace liegt sie?",
+  "correct": "Die Vorlage für Gateways, clusterweit und ohne Namespace.",
+  "wrong": [
+   "Eine einzelne Tür mit Port. Sie liegt im Namespace default.",
+   "Die Regeln einer App. Sie liegt im Namespace der App.",
+   "Ein Pod für den Controller. Sie liegt im Namespace kube-system."
+  ],
+  "hint": "Manche Objekte gehören zum ganzen Cluster, nicht zu einem Namespace.",
+  "explain": "Die Vorlage oder das Modell, aus dem Gateways entstehen. Sie liegt in keinem Namespace, sie gilt im ganzen Cluster."
+ },
+ {
+  "id": 74,
+  "group": "Ingress & Gateway API",
+  "q": "Was steht im controllerName, und ist example.net/gateway-controller echt?",
+  "correct": "Die Kennung der Controller-Software. example.net/... ist nur ein Platzhalter.",
+  "wrong": [
+   "Die Domain der App. example.net/gateway-controller ist eine echte Adresse.",
+   "Der Name des Nodes. example.net/gateway-controller ist ein Pflichtwert.",
+   "Das Passwort des Controllers. example.net ist der Standard."
+  ],
+  "hint": "example.net ist die Beispiel-Domain.",
+  "explain": "Die Kennung der installierten Controller-Software, bei Traefik laut Doku traefik.io/gateway-controller. example.net/... ist nur der Platzhalter der Doku."
+ },
+ {
+  "id": 75,
+  "group": "Ingress & Gateway API",
+  "q": "Trägst du in der GatewayClass einen externen Anbieter ein?",
+  "correct": "Nein. Du installierst den Controller selbst, die Klasse verweist darauf.",
+  "wrong": [
+   "Ja, die GatewayClass bucht einen Dienst bei einem Cloud-Anbieter.",
+   "Ja, ohne einen externen Anbieter startet das Gateway nicht.",
+   "Nein, die GatewayClass startet den Controller selbst und installiert ihn."
+  ],
+  "hint": "Denk an eine App auf dem Handy, nicht an einen gemieteten Dienst.",
+  "explain": "Nein. Du installierst die Controller-Software selbst im Cluster (sie läuft als Pods), die Klasse verweist über die Kennung auf sie. Das ist wie eine App auf dem Handy, kein gemieteter Dienst von draußen."
+ },
+ {
+  "id": 76,
+  "group": "Ingress & Gateway API",
+  "q": "Was ist der Unterschied zwischen GatewayClass und Gateway?",
+  "correct": "GatewayClass ist die Vorlage, Gateway die konkrete Tür.",
+  "wrong": [
+   "GatewayClass ist die konkrete Tür, Gateway ist die Vorlage dazu.",
+   "GatewayClass regelt die Pfade, Gateway regelt die Domains.",
+   "Beide sind dasselbe, Gateway ist nur die kürzere Schreibweise."
+  ],
+  "hint": "Vorlage und Ergebnis.",
+  "explain": "GatewayClass = Vorlage und Bauart (welcher Controller). Gateway = die daraus entstandene konkrete Tür mit eigenem Namen, Namespace und Port."
+ },
+ {
+  "id": 77,
+  "group": "Ingress & Gateway API",
+  "q": "Was steht in einem Gateway unter listeners?",
+  "correct": "Die Eingänge: Name, Protokoll und Port, bei HTTPS das Zertifikat.",
+  "wrong": [
+   "Die Liste der Pods, die Anfragen vom Gateway bekommen.",
+   "Die Liste der Nutzer, die auf das Gateway zugreifen dürfen.",
+   "Die Liste der Images, die der Controller beim Start nutzt."
+  ],
+  "hint": "Ein Listener lauscht an einem Port.",
+  "explain": "Die Eingangsöffnungen: Name, Protokoll (zum Beispiel HTTP) und Port; bei HTTPS kommt das Zertifikat dazu. Ein Gateway kann mehrere haben."
+ },
+ {
+  "id": 78,
+  "group": "Ingress & Gateway API",
+  "q": "Was regelt allowedRoutes, und was ändert from: Same gegenüber from: All?",
+  "correct": "Welche Namespaces Routen andocken dürfen. Same: nur eigener, All: alle.",
+  "wrong": [
+   "Welche Nutzer sich anmelden. Same: ein Nutzer, All: alle Nutzer.",
+   "Welche Ports offen sind. Same: ein Port, All: alle Ports gleichzeitig.",
+   "Welche Images laufen. Same: ein Tag, All: alle Tags der Registry."
+  ],
+  "hint": "from beschreibt, woher die Routen kommen dürfen.",
+  "explain": "Welche Namespaces Routen am Listener andocken dürfen. Same: nur der Namespace des Gateways. All: alle Namespaces."
+ },
+ {
+  "id": 79,
+  "group": "Ingress & Gateway API",
+  "q": "Was ist eine HTTPRoute, und was steht darin?",
+  "correct": "Die Regeln einer App: hostnames, matches, backendRefs, parentRefs.",
+  "wrong": [
+   "Ein Pod, der HTTP spricht, mit image, ports und env.",
+   "Die Vorlage für Gateways mit controllerName und Kennung.",
+   "Die Zugangsdaten zum Gateway mit Nutzername und Passwort."
+  ],
+  "hint": "Eine pro App, geschrieben vom App-Team.",
+  "explain": "Die Regeln einer App: hostnames, rules mit matches (zum Beispiel PathPrefix /), backendRefs (Service und Port) und parentRefs (zu welchem Gateway sie gehört)."
+ },
+ {
+  "id": 80,
+  "group": "Ingress & Gateway API",
+  "q": "Was ist parentRefs, und in welcher Datei steht es?",
+  "correct": "Ein Feld in der HTTPRoute, das auf das Gateway zeigt.",
+  "wrong": [
+   "Ein Feld im Service, das auf die passenden Pods zeigt.",
+   "Ein Feld im Gateway, das auf die GatewayClass zeigt.",
+   "Ein Feld im Deployment, das auf das Image zeigt."
+  ],
+  "hint": "Die Route muss wissen, zu welchem Gateway sie gehört.",
+  "explain": "Ein Feld in der HTTPRoute, das auf das Gateway zeigt (Name, bei Bedarf Namespace). Merkhilfe: Hausnummer auf einem Brief."
+ },
+ {
+  "id": 81,
+  "group": "Ingress & Gateway API",
+  "q": "Fließt über parentRefs Verkehr?",
+  "correct": "Nein, es sagt nur, zu welchem Gateway die Route gehört.",
+  "wrong": [
+   "Ja, parentRefs leitet alle Anfragen an die Pods.",
+   "Ja, aber nur Verkehr von außen.",
+   "Ja, nur bei from: All."
+  ],
+  "hint": "Eine Verknüpfung ist keine Leitung.",
+  "explain": "Nein, es sagt nur, zu welchem Gateway die Route gehört."
+ },
+ {
+  "id": 82,
+  "group": "Ingress & Gateway API",
+  "q": "Wie hängen Route, Gateway und GatewayClass zusammen?",
+  "correct": "Route zeigt per parentRefs aufs Gateway, Gateway auf die Klasse.",
+  "wrong": [
+   "Die GatewayClass zeigt auf das Gateway, das Gateway auf die HTTPRoute.",
+   "Alle drei zeigen direkt und gleichzeitig auf den Service.",
+   "Die HTTPRoute zeigt auf die GatewayClass, das Gateway auf den Pod."
+  ],
+  "hint": "Von unten nach oben: Route, Gateway, Klasse.",
+  "explain": "Die HTTPRoute zeigt per parentRefs auf das Gateway, das Gateway per gatewayClassName auf die GatewayClass."
+ },
+ {
+  "id": 83,
+  "group": "Ingress & Gateway API",
+  "q": "Welchen Weg nimmt eine Anfrage vom Browser bis zum Pod?",
+  "correct": "Browser, Gateway, HTTPRoute, Service, Pods.",
+  "wrong": [
+   "Browser, Service, Gateway, HTTPRoute, Pods.",
+   "Browser, HTTPRoute, GatewayClass, Pods, Service.",
+   "Browser, Pods, Service, Gateway, HTTPRoute."
+  ],
+  "hint": "Zuerst die Tür, dann die Regeln, dann der Service.",
+  "explain": "Browser, Gateway, HTTPRoute, Service, Pods."
+ },
+ {
+  "id": 84,
+  "group": "Ingress & Gateway API",
+  "q": "Welcher Ingress-Teil entspricht welchem Gateway-API-Teil?",
+  "correct": "ingressClassName entspricht gatewayClassName, Port und TLS dem Gateway, rules der Route.",
+  "wrong": [
+   "rules entspricht der GatewayClass, ingressClassName entspricht der HTTPRoute.",
+   "Port und TLS entsprechen der HTTPRoute, rules entsprechen dem Gateway.",
+   "Es gibt keine Entsprechung, die Gateway API ist völlig anders."
+  ],
+  "hint": "Klasse, Tür, Regeln.",
+  "explain": "ingressClassName (Feld) entspricht gatewayClassName im Gateway; die IngressClass (Objekt) entspricht der GatewayClass. Port und TLS: Gateway (listeners). rules mit host, path, backend: HTTPRoute (hostnames, matches, backendRefs). Neu: parentRefs."
+ },
+ {
+  "id": 85,
+  "group": "Ingress & Gateway API",
+  "q": "In welchem Namespace sucht backendRefs den Service, wenn keiner angegeben ist?",
+  "correct": "Im Namespace der HTTPRoute.",
+  "wrong": [
+   "Im Namespace des Gateways.",
+   "Im Namespace default.",
+   "Im Namespace kube-system."
+  ],
+  "hint": "Die Route und ihr Service liegen normalerweise zusammen.",
+  "explain": "Im Namespace der HTTPRoute selbst."
+ },
+ {
+  "id": 86,
+  "group": "Ingress & Gateway API",
+  "q": "In welcher Reihenfolge legst du das Beispiel an?",
+  "correct": "Namespaces, Controller und CRDs, GatewayClass, Gateway, dann Deployment, Service, Route.",
+  "wrong": [
+   "HTTPRoute, Service, Deployment, Gateway, GatewayClass, Controller, Namespaces.",
+   "Deployment, HTTPRoute, Namespaces, GatewayClass, Gateway, Service, Controller.",
+   "Gateway, GatewayClass, HTTPRoute, Deployment, dann Namespaces und Controller."
+  ],
+  "hint": "Was auf etwas anderes zeigt, kommt später.",
+  "explain": "Namespaces, Controller und CRDs installieren, GatewayClass, Gateway, dann pro App Deployment, Service und HTTPRoute."
+ },
+ {
+  "id": 87,
+  "group": "Ingress & Gateway API",
+  "q": "Muss der Namespace vor dem Anlegen eines Objekts existieren?",
+  "correct": "Ja, Kubernetes legt ihn nicht von allein an: kubectl create namespace.",
+  "wrong": [
+   "Nein, Kubernetes legt ihn beim ersten Objekt automatisch an.",
+   "Nein, aber nur bei Services und Gateways, sonst ja.",
+   "Ja, aber nur beim Namespace default, andere legt Kubernetes an."
+  ],
+  "hint": "Ein Objekt ohne Namespace-Ziel hat keinen Platz.",
+  "explain": "Ja, Kubernetes legt ihn nicht automatisch an: kubectl create namespace infra."
+ },
+ {
+  "id": 88,
+  "group": "Ingress & Gateway API",
+  "q": "Spielt der Dateiname eine Rolle?",
+  "correct": "Nein. Kubernetes liest nur kind, name und namespace im Inhalt.",
+  "wrong": [
+   "Ja, die Datei muss genauso heißen wie das Objekt darin.",
+   "Ja, die Endung muss .yaml sein, sonst liest kubectl sie nicht.",
+   "Ja, der Dateiname wird automatisch zum Namen des Objekts."
+  ],
+  "hint": "kubectl liest den Inhalt, nicht den Dateinamen.",
+  "explain": "Nein. Kubernetes liest nur kind, name und namespace im Inhalt, eine Datei wurst.yaml würde genauso funktionieren."
+ },
+ {
+  "id": 89,
+  "group": "Ingress & Gateway API",
+  "q": "Dürfen zwei Gateways denselben Namen im selben Namespace haben?",
+  "correct": "Nein. Gleicher Typ, Name und Namespace ist dasselbe Objekt, apply ändert es.",
+  "wrong": [
+   "Ja, Kubernetes legt dann einfach beide Gateways nebeneinander an.",
+   "Ja, aber nur, wenn sie verschiedene Ports in den Listenern nutzen.",
+   "Nein, und apply löscht dann das erste Gateway und legt ein neues an."
+  ],
+  "hint": "Typ, Namespace und Name: So wird ein Objekt gefunden.",
+  "explain": "Nein. Gleicher kind, name und namespace ist dasselbe Objekt: create meldet AlreadyExists, apply ändert das vorhandene."
+ },
+ {
+  "id": 90,
+  "group": "Ingress & Gateway API",
+  "q": "Und in verschiedenen Namespaces?",
+  "correct": "Ja. Der Name ist nur innerhalb eines Namespace eindeutig.",
+  "wrong": [
+   "Nein, Namen sind im ganzen Cluster eindeutig.",
+   "Nein, außer die Namespaces gehören dem gleichen Team.",
+   "Ja, aber nur bei Gateways, nicht bei Services."
+  ],
+  "hint": "Namespace heißt Namensbereich.",
+  "explain": "Ja. Der Name ist nur innerhalb eines Namespace eindeutig."
+ },
+ {
+  "id": 91,
+  "group": "Ingress & Gateway API",
+  "q": "Dürfen HTTPRoute und Service denselben Namen haben?",
+  "correct": "Ja, der Typ gehört zur Eindeutigkeit. Beide dürfen so heißen.",
+  "wrong": [
+   "Nein, Namen sind im Namespace für alle Typen gemeinsam eindeutig.",
+   "Nein, das führt immer zu einem AlreadyExists-Fehler beim Anlegen.",
+   "Ja, aber nur bei Services und Pods, nicht bei HTTPRoutes."
+  ],
+  "hint": "kind, name, namespace: drei Teile.",
+  "explain": "Ja, der Typ gehört zur Eindeutigkeit. Beispiel: beide heißen interview-app."
+ },
+ {
+  "id": 92,
+  "group": "Ingress & Gateway API",
+  "q": "Woraus besteht die Eindeutigkeit eines Objekts, und was ist bei der GatewayClass anders?",
+  "correct": "Typ, Namespace und Name. Die GatewayClass hat keinen Namespace.",
+  "wrong": [
+   "Nur Name und Image. Die GatewayClass hat gleich zwei Namen.",
+   "Typ und Label. Die GatewayClass hat mehrere Namespaces.",
+   "Name und Port. Die GatewayClass hat dafür keinen Port."
+  ],
+  "hint": "Manche Objekte gehören zum ganzen Cluster.",
+  "explain": "Typ, Namespace und Name. Die GatewayClass hat keinen Namespace, ihr Name ist im ganzen Cluster eindeutig."
+ },
+ {
+  "id": 93,
+  "group": "Ingress & Gateway API",
+  "q": "Braucht jede App ein eigenes Gateway?",
+  "correct": "Nein. Viele Apps teilen sich ein Gateway, jede hat ihre HTTPRoute.",
+  "wrong": [
+   "Ja, ein eigenes Gateway pro App ist in Kubernetes Pflicht.",
+   "Ja, sonst vermischen sich die Domains der verschiedenen Apps.",
+   "Nein, aber jede App braucht eine eigene GatewayClass."
+  ],
+  "hint": "Das Gateway ist die gemeinsame Tür.",
+  "explain": "Nein. Oft teilen sich viele Apps ein Gateway, jede App schreibt nur ihre eigene HTTPRoute. Mehrere Gateways (zum Beispiel intern und extern) sind möglich."
+ },
+ {
+  "id": 94,
+  "group": "Ingress & Gateway API",
+  "q": "Sind die Gateway-API-Objekte in jedem Cluster vorhanden?",
+  "correct": "Nein, es sind eigene CRDs, oft vom Controller mitgebracht.",
+  "wrong": [
+   "Ja, sie gehören fest zum Kubernetes-Kern und sind immer da.",
+   "Ja, kubeadm installiert sie beim Aufbau des Clusters automatisch.",
+   "Nein, sie müssen in jedem Namespace einzeln angelegt werden."
+  ],
+  "hint": "CRD heißt Custom Resource Definition.",
+  "explain": "Nein, es sind eigene CRDs. Ein Controller bringt sie oft mit, sonst installiert man sie von Hand (die Doku nannte v1.6.1; die Version vorher prüfen)."
+ },
+ {
+  "id": 95,
+  "group": "Ingress & Gateway API",
+  "q": "Was musst du bei Traefik zum Listener-Port beachten?",
+  "correct": "Er muss zu den EntryPoints der Traefik-Installation passen.",
+  "wrong": [
+   "Er muss immer genau 80 sein, sonst startet Traefik nicht.",
+   "Er muss größer als 30000 sein, wie bei NodePorts.",
+   "Er muss mit dem Port des Pods übereinstimmen."
+  ],
+  "hint": "Traefik nennt seine Eingänge EntryPoints.",
+  "explain": "Er muss zu den EntryPoints der Traefik-Installation passen, sonst gibt es einen Fehler."
+ },
+ {
+  "id": 96,
+  "group": "Ingress & Gateway API",
+  "q": "Warum brauchst du from: All, wenn das Gateway in infra liegt und die Apps in shop und buchhaltung?",
+  "correct": "Bei Same dürften nur Routen aus dem Namespace infra andocken.",
+  "wrong": [
+   "Weil die Apps sonst ihren Service nicht finden würden.",
+   "Weil from: Same nur bei HTTPS-Listenern funktioniert.",
+   "Weil shop und buchhaltung sonst automatisch gelöscht würden."
+  ],
+  "hint": "Same bedeutet: gleicher Namespace wie das Gateway.",
+  "explain": "Bei from: Same dürften nur Routen aus infra andocken."
+ },
+ {
+  "id": 97,
+  "group": "Ingress & Gateway API",
+  "q": "Wie lange dauert es bei periodSeconds 10 und failureThreshold 3, bis Kubernetes den Container neu startet?",
+  "correct": "Nach dem dritten Fehlschlag, etwa 20 bis 30 Sekunden.",
+  "wrong": [
+   "Sofort beim ersten Fehlschlag der Probe.",
+   "Genau nach drei Sekunden, unabhängig von periodSeconds.",
+   "Nach drei Minuten, weil drei mal 60 Sekunden gelten."
+  ],
+  "hint": "Drei Fehlschläge im Abstand von zehn Sekunden.",
+  "explain": "Der dritte Fehlschlag in Folge löst den Neustart aus: etwa 20 bis 30 Sekunden ab Beginn des Ausfalls, nicht genau 30, bei langen Timeouts etwas länger."
+ },
+ {
+  "id": 98,
+  "group": "Ingress & Gateway API",
+  "q": "Isoliert ein Namespace Netzwerk und Rechte?",
+  "correct": "Nein, dafür braucht es NetworkPolicies und RBAC.",
+  "wrong": [
+   "Ja, ein Namespace isoliert beides automatisch und vollständig.",
+   "Ja, aber er isoliert nur das Netzwerk.",
+   "Ja, aber er isoliert nur die Rechte."
+  ],
+  "hint": "Namen werden getrennt, der Verkehr fließt trotzdem.",
+  "explain": "Nein, dafür braucht es NetworkPolicies und RBAC."
+ },
+ {
+  "id": 99,
+  "group": "Ingress & Gateway API",
+  "q": "Bringt eine Helm-Installation die GatewayClass immer mit?",
+  "correct": "Nicht belegt, hängt vom Controller ab. Nach der Installation prüfen.",
+  "wrong": [
+   "Ja, Helm legt die GatewayClass bei jeder Installation automatisch an.",
+   "Nein, Helm kann grundsätzlich keine clusterweiten Objekte anlegen.",
+   "Ja, aber nur im Namespace default, nicht in anderen."
+  ],
+  "hint": "Prüfen statt annehmen.",
+  "explain": "Nicht belegt, das hängt vom Controller ab. Nach der Installation prüfen, ob sie vorhanden ist, sonst selbst anlegen."
+ },
+ {
+  "id": 100,
+  "group": "Ingress & Gateway API",
+  "q": "Wie sagst du im Gespräch ehrlich, wie weit du mit der Gateway API bist?",
+  "correct": "Ich kenne das Konzept, betrieben habe ich es noch nicht.",
+  "wrong": [
+   "Ich habe sie produktiv betrieben und Ingress NGINX komplett abgelöst.",
+   "Ich kenne sie nicht und halte sie ohnehin für unwichtig.",
+   "Ich nutze sie täglich in meinem Cluster und habe sie dort aufgebaut."
+  ],
+  "hint": "Ehrlich heißt: sagen, was du kannst und was du noch nicht betrieben hast.",
+  "explain": "Ich kenne das Konzept und würde sie für neue Setups statt Ingress NGINX nehmen: gemeinsames Gateway vom Infra-Team, eine HTTPRoute pro App. Betrieben habe ich es noch nicht. (Vorschlag, sag es in deinen Worten.)"
+ },
+ {
+  "id": 101,
+  "group": "Cluster & KI (neu)",
+  "q": "Was passiert, wenn du einen Pod der interview-app löschst?",
+  "correct": "Das ReplicaSet sieht Ist 1, Soll 2 und startet einen neuen Pod.",
+  "wrong": [
+   "Nichts, der Pod bleibt weg, bis du das Deployment neu anwendest.",
+   "Das Deployment wird automatisch mit dem Pod gelöscht.",
+   "Der Cluster startet daraufhin alle Nodes neu."
+  ],
+  "hint": "Das Deployment hält ein Soll.",
+  "explain": "Der Pod geht auf Terminating, das Deployment will weiter 2 Replicas (Soll), das ReplicaSet sieht Ist 1 gegen Soll 2 und startet einen neuen Pod. Im Drill war der neue Pod nach etwa 3 Sekunden Running."
+ },
+ {
+  "id": 102,
+  "group": "Cluster & KI (neu)",
+  "q": "Was passiert bei kubectl scale --replicas=4, und was beim Zurück auf 2?",
+  "correct": "Soll 4: zwei neue Pods. Zurück auf 2: Das ReplicaSet beendet zwei Pods.",
+  "wrong": [
+   "Alle vier Pods starten neu, beim Zurück auf 2 bleiben alle vier laufen.",
+   "Es entstehen zwei neue Deployments, beim Zurück bleiben sie bestehen.",
+   "Nichts, scale ändert nur die Datei deployment.yaml im Repository."
+  ],
+  "hint": "Das ReplicaSet gleicht Soll und Ist ab.",
+  "explain": "Soll geht auf 4, zwei neue Pods entstehen (im Drill je einer pro Worker). Zurück auf 2: das ReplicaSet beendet zwei Pods, im Drill die zwei neuesten."
+ },
+ {
+  "id": 103,
+  "group": "Cluster & KI (neu)",
+  "q": "Warum steht in deiner deployment.yaml nach kubectl scale weiter replicas: 2?",
+  "correct": "scale ändert nur den Cluster, ein späteres apply setzt wieder auf 2.",
+  "wrong": [
+   "scale schreibt in die Datei, nur die Anzeige hat sich nicht aktualisiert.",
+   "Git setzt die Datei nach jedem Push automatisch zurück.",
+   "In der Datei lässt sich replicas grundsätzlich nie ändern."
+  ],
+  "hint": "Datei und Cluster sind zwei verschiedene Orte.",
+  "explain": "scale ändert nur den laufenden Cluster, nicht die Datei. Ein späteres kubectl apply -f k8s/ setzt wieder auf 2 zurück."
+ },
+ {
+  "id": 104,
+  "group": "Cluster & KI (neu)",
+  "q": "Wer macht was: Deployment, ReplicaSet, Scheduler?",
+  "correct": "Deployment: Soll. ReplicaSet: Soll und Ist angleichen. Scheduler: Worker wählen.",
+  "wrong": [
+   "Der Scheduler hält das Soll, das Deployment wählt den Worker, das ReplicaSet baut Images.",
+   "Das ReplicaSet wählt den Worker, der Scheduler startet Container, das Deployment ist nur ein Label.",
+   "Das Deployment startet Container direkt, ReplicaSet und Scheduler sind veraltet."
+  ],
+  "hint": "Drei Aufgaben: Soll halten, Ist angleichen, Platz aussuchen.",
+  "explain": "Deployment hält das Soll (replicas, Pod-Vorlage, Updates). Das ReplicaSet vergleicht Soll mit Ist und legt Pods an oder beendet sie. Der Scheduler wählt den Worker für einen neuen Pod."
+ },
+ {
+  "id": 105,
+  "group": "Cluster & KI (neu)",
+  "q": "Aus welchen Teilen besteht die Control Plane, und mit wem spricht kubectl?",
+  "correct": "API-Server, etcd, Scheduler, Controller-Manager. kubectl nutzt den API-Server.",
+  "wrong": [
+   "kubelet, Docker und Calico. kubectl spricht mit dem Container selbst.",
+   "etcd und Ingress. kubectl spricht direkt mit etcd auf dem Worker.",
+   "Nur der Scheduler. kubectl spricht mit dem Worker und dem Scheduler."
+  ],
+  "hint": "Der Eingang zur Control Plane heißt API-Server.",
+  "explain": "kube-apiserver (Eingang), etcd (Speicher des Zustands), Scheduler (wählt den Node), Controller-Manager (gleicht Soll und Ist ab). Das kubelet läuft auf jedem Node und startet dort die Pods. kubectl spricht mit dem API-Server."
+ },
+ {
+  "id": 106,
+  "group": "Cluster & KI (neu)",
+  "q": "Wie bekommt eine App auf Kubernetes einen API-Key für einen externen KI-Dienst?",
+  "correct": "Als Secret, zur Laufzeit in den Pod gegeben, nicht ins Image.",
+  "wrong": [
+   "Fest im Dockerfile per ENV, damit das Image überall läuft.",
+   "Direkt in app.py, dann liegt er im Git-Repository.",
+   "Per Mail an alle Nutzer, die ihn dann selbst eingeben."
+  ],
+  "hint": "Geheimnisse gehören nicht in Dinge, die man teilt.",
+  "explain": "Als Secret, das zur Laufzeit in den Pod gegeben wird (zum Beispiel als Umgebungsvariable). Nicht ins Image und nicht ins Git."
+ },
+ {
+  "id": 107,
+  "group": "Cluster & KI (neu)",
+  "q": "Warum gehört ein API-Key nicht ins Container-Image?",
+  "correct": "Aus öffentlichen Images lassen sich Schichten auslesen.",
+  "wrong": [
+   "Weil Images grundsätzlich keine Textdateien enthalten dürfen.",
+   "Weil Kubernetes Keys im Image automatisch wieder löscht.",
+   "Weil Keys im Image die CPU des Pods spürbar verlangsamen."
+  ],
+  "hint": "Wer das Image ziehen kann, kann hineinsehen.",
+  "explain": "Aus einem öffentlichen Image lassen sich die Schichten auslesen. Außerdem soll das Image umgebungsneutral sein: dasselbe Image läuft überall, die Geheimnisse kommen erst zur Laufzeit."
+ },
+ {
+  "id": 108,
+  "group": "Cluster & KI (neu)",
+  "q": "Welche zwei Wege gibt es für KI auf Kubernetes?",
+  "correct": "Externen Dienst nutzen (Key als Secret) oder eigenes Modell betreiben.",
+  "wrong": [
+   "Nur eigene Modelle, externe Dienste laufen nie über Kubernetes.",
+   "Nur externe Dienste, Modelle passen nicht in Container.",
+   "KI läuft immer auf der Control Plane, die Worker sind zu schwach."
+  ],
+  "hint": "Mieten oder selbst betreiben.",
+  "explain": "1) Externen KI-Dienst nutzen: API-Key als Secret, Egress, Timeouts, Kostenlimit, Datenschutz. 2) Eigenes Modell betreiben: Modell-Server im Container (zum Beispiel vLLM, Ollama, KServe), viel RAM, GPU über resources.limits nvidia.com/gpu (braucht das Device Plugin)."
+ },
+ {
+  "id": 109,
+  "group": "Cluster & KI (neu)",
+  "q": "Wozu dient die readinessProbe, wenn ein Modell erst geladen werden muss?",
+  "correct": "Sie hält den Traffic zurück, bis das Modell geladen ist.",
+  "wrong": [
+   "Sie startet den Pod neu, solange das Modell noch lädt.",
+   "Sie lädt das Modell selbst aus der Registry herunter.",
+   "Sie löscht den Pod, wenn das Laden zu lange dauert."
+  ],
+  "hint": "Der Pod läuft schon, ist aber noch nicht bereit.",
+  "explain": "Sie hält den Traffic zurück, bis das Modell geladen ist. Der Pod läuft schon, bekommt aber erst Anfragen, wenn /readyz erfolgreich antwortet."
+ },
+ {
+  "id": 110,
+  "group": "Cluster & KI (neu)",
+  "q": "Was sind MLOps und ein Agent Harness?",
+  "correct": "MLOps: Pipeline für Modelle. Agent Harness: Umgebung für Agenten mit Werkzeugen.",
+  "wrong": [
+   "MLOps ist ein Modell. Ein Agent Harness ist ein GPU-Treiber für Pods.",
+   "MLOps ersetzt Kubernetes. Ein Agent Harness ist ein Ingress-Controller.",
+   "MLOps ist ein Dateiformat. Ein Agent Harness ist eine Container-Registry."
+  ],
+  "hint": "Das Modell entscheidet. Wer führt aus?",
+  "explain": "MLOps: Pipeline für Modelle und Daten, ähnlich CI/CD für Software. Agent Harness: die Umgebung, in der ein Agent mit Werkzeugen arbeitet. Das Modell entscheidet, der Harness führt die Tool-Aufrufe aus und setzt Grenzen."
+ },
+ {
+  "id": 111,
+  "group": "Cluster & KI (neu)",
+  "q": "Warum ein Modell selbst betreiben statt einen externen Dienst nutzen?",
+  "correct": "Datensouveränität: Die Daten bleiben im eigenen Netz.",
+  "wrong": [
+   "Weil eigene Modelle immer billiger und besser sind.",
+   "Weil externe Dienste kein Kubernetes unterstützen.",
+   "Weil eigene Modelle keine eigene Hardware brauchen."
+  ],
+  "hint": "Wohin gehen deine Daten?",
+  "explain": "Datensouveränität: die Daten verlassen das eigene Netz nicht. Das ist im Behördenumfeld ein wichtiger Grund. Dafür trägst du Betrieb, Hardware und Updates selbst."
+ },
+ {
+  "id": 112,
+  "group": "Cluster & KI (neu)",
+  "q": "Was sind requests und limits, und welche QoS-Klasse hat deine interview-app?",
+  "correct": "requests: Reservierung, limits: Obergrenze. Ungleich ergibt Burstable.",
+  "wrong": [
+   "requests ist die Obergrenze, limits die Reservierung. Die App ist Guaranteed.",
+   "requests sind Nutzeranfragen, limits sind Ports. Die App ist BestEffort.",
+   "Beides sind Image-Namen. Die App hat keine QoS-Klasse."
+  ],
+  "hint": "Die Werte sind 50m/64Mi und 250m/128Mi, also ungleich.",
+  "explain": "requests: reservierte Menge, danach plant der Scheduler. limits: Obergrenze (zu viel Speicher: OOMKilled, zu viel CPU: gedrosselt). Die interview-app hat requests 50m/64Mi und limits 250m/128Mi. Requests und Limits sind verschieden, also Klasse Burstable."
+ },
+ {
+  "id": 113,
+  "group": "Cluster & KI (neu)",
+  "q": "Was ist der Unterschied zwischen CI und CD, und was hast du?",
+  "correct": "CI testet und baut, CD deployt automatisch. Ich habe nur CI.",
+  "wrong": [
+   "CI deployt automatisch, CD testet. Ich habe beides eingerichtet.",
+   "CI und CD sind dasselbe. Ich habe CD, aber kein CI.",
+   "CI baut Cluster, CD baut Images. Ich habe nur CD."
+  ],
+  "hint": "Das I steht für Integration, das D für Delivery oder Deployment.",
+  "explain": "CI: bei jedem Push automatisch testen und das Image bauen. CD: automatisch deployen. Ich habe CI (Test, Image, Push nach GHCR). Deployen mache ich per kubectl apply von Hand."
+ },
+ {
+  "id": 114,
+  "group": "Cluster & KI (neu)",
+  "q": "Wie zeigst du die App im Cluster, wenn es keinen Ingress gibt?",
+  "correct": "Mit kubectl port-forward auf den Service, dann curl.",
+  "wrong": [
+   "Mit docker run auf dem Knoten k8s-control.",
+   "Mit ssh in den Pod und dort ls ausführen.",
+   "Gar nicht, ohne Ingress ist keine App erreichbar."
+  ],
+  "hint": "Ein Tunnel vom eigenen Rechner in den Cluster.",
+  "explain": "Mit kubectl port-forward auf den Service und curl auf localhost. Zum Beispiel kubectl -n interview-lab port-forward svc/interview-app 8080:80."
+ },
+ {
+  "id": 115,
+  "group": "Cluster & KI (neu)",
+  "q": "Was zeigst du im Interview live im Cluster?",
+  "correct": "get nodes, get pods -A, Pod löschen, GitHub-Link.",
+  "wrong": [
+   "Nur Folien, im Cluster zeige ich nichts.",
+   "kubeadm reset auf allen Nodes, damit alles neu startet.",
+   "Den API-Key der KI, damit alle ihn sehen können."
+  ],
+  "hint": "Zustand zeigen, Selbstheilung zeigen, Quelle zeigen.",
+  "explain": "kubectl get nodes und kubectl get pods -A (Zustand). Dann einen Pod löschen und zeigen, dass er sich selbst heilt, oder skalieren und zurück. Dazu der GitHub-Link mit Workflow und Manifesten."
+ }
+]
